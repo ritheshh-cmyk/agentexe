@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.enc
+otp_auth.db
+server/private_key.pem
+server/public_key.pem
+client/public_key.pem
+venv/
+.env
+client/build/
+client/dist/
+*.spec

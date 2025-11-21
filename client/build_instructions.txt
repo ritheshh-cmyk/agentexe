@@ -1,0 +1,50 @@
+# Building the Protected EXE
+
+## 1. Prepare the Application Script
+1. Ensure your main application logic is in `th.py`.
+2. Move `th.py` into the `client/` directory:
+   ```bash
+   mv th.py client/th.py
+   ```
+   *(Or copy it manually)*
+
+## 2. Integrate Authentication
+The `client/main.py` script is the entry point. It handles authentication and then needs to launch your app.
+
+1. Open `client/main.py`.
+2. Import your script at the top:
+   ```python
+   import th  # Assuming th.py is in the same folder
+   ```
+3. Locate the `run_protected_app` function.
+4. Replace the print statements with a call to your app's main function:
+   ```python
+   def run_protected_app(user_id):
+       clear_screen()
+       print(f"Launching application for {user_id}...")
+       
+       # Launch your app
+       try:
+           if hasattr(th, 'main'):
+               th.main()
+           else:
+               # If th.py runs on import, reload it or just let it run
+               # Note: If it runs on import, it might have already run at the top.
+               # Best practice: Wrap th.py code in a function.
+               pass 
+       except Exception as e:
+           print(f"App crashed: {e}")
+           input()
+   ```
+
+## 3. Build the EXE
+Run PyInstaller from the `client` directory:
+
+```bash
+pyinstaller --onefile --name "ProtectedApp" --add-data "public_key.pem;." --hidden-import th main.py
+```
+
+- `--hidden-import th`: Ensures PyInstaller finds your `th.py` module.
+- `--add-data`: Embeds the public key.
+
+The output `dist/ProtectedApp.exe` will now be your fully secured application.
