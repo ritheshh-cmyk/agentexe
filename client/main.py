@@ -2,18 +2,18 @@ import os
 import sys
 import requests
 import time
-from getpass import getpass
+import pyperclip  # Need to install this: pip install pyperclip
 
 from device_id import get_device_id
 from security import encrypt_token, decrypt_token, validate_token
 
-SERVER_URL = "http://127.0.0.1:8000"
+SERVER_URL = "https://ootp-auth-system-hrcayu3wx-ritheshs-projects-2bddf162.vercel.app"
 TOKEN_FILE = "token.enc"
+
+import th
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
-
-import th
 
 def run_protected_app(user_id):
     clear_screen()
@@ -23,100 +23,91 @@ def run_protected_app(user_id):
     print("Authentication Successful. Launching App...")
     time.sleep(1)
     
-    # Launch the protected application
     try:
         th.main()
     except Exception as e:
         print(f"Error running application: {e}")
         input("Press Enter to exit...")
 
-
 def authenticate():
+    # 1. Extract Machine ID
     device_id = get_device_id()
-    print(f"Device ID: {device_id}")
     
-    # 1. Check for existing token
+    # 2. Check for existing token
     if os.path.exists(TOKEN_FILE):
         try:
-            print("Found existing token. Validating...")
             with open(TOKEN_FILE, "rb") as f:
                 encrypted_data = f.read()
-            
             token = decrypt_token(encrypted_data, device_id)
             claims = validate_token(token, device_id)
-            
-            print("Token is valid!")
-            time.sleep(1)
             run_protected_app(claims.get("sub"))
             return
-        except Exception as e:
-            print(f"Token validation failed: {e}")
-            print("Re-authentication required.")
-            try:
-                os.remove(TOKEN_FILE)
-            except:
-                pass
-            time.sleep(2)
-            clear_screen()
+        except Exception:
+            pass # Invalid token, proceed to auth
 
-    # 2. Start Auth Flow
-    print("--- AUTHENTICATION REQUIRED ---")
-    user_id = input("Enter User ID: ").strip()
-    if not user_id:
-        print("User ID cannot be empty.")
-        return
+    # 3. Registration / Approval Flow
+    clear_screen()
+    print("="*50)
+    print("   DEVICE AUTHORIZATION REQUIRED")
+    print("="*50)
+    
+    user_id = input("Enter your Name/ID: ").strip()
+    if not user_id: return
 
-    # Request OTP
-    try:
-        print(f"Requesting OTP from {SERVER_URL}...")
-        resp = requests.post(f"{SERVER_URL}/create_otp", json={
-            "identifier": user_id,
-            "device_id": device_id
-        })
-        resp.raise_for_status()
-        data = resp.json()
-        
-        # In a real app, you wouldn't print this. 
-        # But for this demo/MVP where we don't have email setup:
-        print(f"\n[DEMO MODE] Your OTP is: {data.get('otp')}\n")
-        
-    except Exception as e:
-        print(f"Error connecting to server: {e}")
-        return
-
-    # Verify OTP
-    otp_input = input("Enter OTP: ").strip()
+    print(f"\nYour Device ID is:\n{device_id}\n")
     
     try:
-        print("Verifying...")
-        resp = requests.post(f"{SERVER_URL}/verify_otp", json={
-            "identifier": user_id,
-            "otp": otp_input,
-            "device_id": device_id
+        pyperclip.copy(device_id)
+        print("(Copied to clipboard!)")
+    except:
+        pass
+
+    print("\n[-] Registering with server...")
+    try:
+        requests.post(f"{SERVER_URL}/register_device", json={
+            "device_id": device_id,
+            "identifier": user_id
         })
-        resp.raise_for_status()
-        token_data = resp.json()
-        access_token = token_data["access_token"]
-        
-        # Validate immediately to be sure
-        validate_token(access_token, device_id)
-        
-        # Save encrypted
-        encrypted = encrypt_token(access_token, device_id)
-        with open(TOKEN_FILE, "wb") as f:
-            f.write(encrypted)
-            
-        print("Authentication successful! Token saved.")
-        time.sleep(1)
-        run_protected_app(user_id)
-        
     except Exception as e:
-        print(f"Authentication failed: {e}")
-        if hasattr(e, 'response') and e.response is not None:
-            print(f"Server message: {e.response.text}")
+        print(f"Error contacting server: {e}")
+        input("Press Enter to exit...")
+        return
+
+    print("\n[!] STATUS: PENDING APPROVAL")
+    print("Please ask the Admin to approve this device.")
+    print("Waiting for approval... (Ctrl+C to cancel)")
+
+    # Poll for approval
+    while True:
+        try:
+            resp = requests.get(f"{SERVER_URL}/check_approval", params={"device_id": device_id})
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("approved"):
+                    print("\n[+] APPROVED! Downloading token...")
+                    access_token = data["access_token"]
+                    
+                    # Validate & Save
+                    validate_token(access_token, device_id)
+                    encrypted = encrypt_token(access_token, device_id)
+                    with open(TOKEN_FILE, "wb") as f:
+                        f.write(encrypted)
+                        
+                    time.sleep(1)
+                    run_protected_app(user_id)
+                    return
+            
+            # Wait before polling again
+            for i in range(5):
+                print(".", end="", flush=True)
+                time.sleep(1)
+                
+        except KeyboardInterrupt:
+            print("\nCancelled.")
+            return
+        except Exception as e:
+            print(f"\nError: {e}")
+            time.sleep(5)
 
 if __name__ == "__main__":
-    try:
-        authenticate()
-    except KeyboardInterrupt:
-        print("\nExiting...")
+    authenticate()

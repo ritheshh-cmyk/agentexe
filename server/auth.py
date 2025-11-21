@@ -10,12 +10,19 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = "RS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 
+# Fix path resolution
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PRIVATE_KEY_PATH = os.path.join(BASE_DIR, "private_key.pem")
+
 def get_private_key():
-    with open("server/private_key.pem", "rb") as f:
+    # In production, you might want to load this from an Env Var for better security
+    # But for now, we load from file
+    with open(PRIVATE_KEY_PATH, "rb") as f:
         return f.read()
 
 def get_public_key():
-    with open("server/public_key.pem", "rb") as f:
+    public_key_path = os.path.join(BASE_DIR, "public_key.pem")
+    with open(public_key_path, "rb") as f:
         return f.read()
 
 def verify_password(plain_password, hashed_password):

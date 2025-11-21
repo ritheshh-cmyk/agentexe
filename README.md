@@ -42,11 +42,21 @@ A secure, offline-capable authentication system for distributed executables.
 
 ## Deployment
 
-### Server (Railway/Render/DigitalOcean)
+### Server on Vercel (Recommended)
+
+**For Vercel deployment with persistent database, see [vercel_setup.md](vercel_setup.md) for detailed instructions.**
+
+Quick steps:
+1. Create Vercel Postgres database in your project
+2. Push to Git or redeploy
+3. Database environment variables are automatically configured
+
+### Alternative: Railway/Render/DigitalOcean
 1. **Environment**: Python 3.10+.
 2. **Files**: Upload `server/` directory and `requirements.txt`.
-3. **Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`.
-4. **HTTPS**: Most platforms (Railway, Render) handle SSL automatically.
+3. **Database**: Set `DATABASE_URL` environment variable to your PostgreSQL connection string.
+4. **Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`.
+5. **HTTPS**: Most platforms (Railway, Render) handle SSL automatically.
 
 ### Client Distribution
 Follow instructions in `client/build_instructions.txt` to package as an EXE.

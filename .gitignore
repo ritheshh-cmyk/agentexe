@@ -10,3 +10,4 @@ venv/
 client/build/
 client/dist/
 *.spec
+.vercel

@@ -16,6 +16,15 @@ class OTP(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True))
 
+class Device(Base):
+    __tablename__ = "devices"
+    
+    device_id = Column(String, primary_key=True, index=True)
+    identifier = Column(String, index=True) # User ID / Name
+    approved = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 # Pydantic Schemas
 class OTPRequest(BaseModel):
     identifier: str
@@ -34,3 +43,12 @@ class TokenResponse(BaseModel):
 class ValidateRequest(BaseModel):
     token: str
     device_id: str
+
+class DeviceRegister(BaseModel):
+    device_id: str
+    identifier: str
+
+class DeviceApproval(BaseModel):
+    device_id: str
+    approved: bool
+    admin_password: str
