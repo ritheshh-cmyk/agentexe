@@ -48,7 +48,7 @@ services:
   instance_count: 1
   instance_size_slug: basic-xxs
 ```
-*Note: You'll need to modify `server/auth.py` to read the private key from an env var if it's not a file.*
+*Note: The code is already configured to read `PRIVATE_KEY` from environment variables.*
 
 ### 3. Push to GitHub
 1. Create a new repository on GitHub.

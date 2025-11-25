@@ -15,10 +15,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRIVATE_KEY_PATH = os.path.join(BASE_DIR, "private_key.pem")
 
 def get_private_key():
-    # In production, you might want to load this from an Env Var for better security
-    # But for now, we load from file
-    with open(PRIVATE_KEY_PATH, "rb") as f:
-        return f.read()
+    # Try to get from environment variable first (Best for Cloud/DigitalOcean)
+    env_key = os.getenv("PRIVATE_KEY")
+    if env_key:
+        # If it's a one-line string with \n literal, replace them
+        if "\\n" in env_key:
+            env_key = env_key.replace("\\n", "\n")
+        return env_key.encode()
+
+    # Fallback to file
+    if os.path.exists(PRIVATE_KEY_PATH):
+        with open(PRIVATE_KEY_PATH, "rb") as f:
+            return f.read()
+            
+    raise FileNotFoundError("Private key not found in ENV or file!")
 
 def get_public_key():
     public_key_path = os.path.join(BASE_DIR, "public_key.pem")

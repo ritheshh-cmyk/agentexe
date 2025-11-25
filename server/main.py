@@ -4,24 +4,14 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import os
 
+# Local imports
 from . import models, database, auth
 
 app = FastAPI(title="Device Approval Auth System")
 
-# Create tables
-models.Base.metadata.create_all(bind=database.engine)
-
+# Admin password (set via env var in Vercel)
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
-@app.get("/health")
-def health_check():
-    try:
-        # Test database connection
-        db = next(database.get_db())
-        db.execute("SELECT 1")
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        return {"status": "unhealthy", "error": str(e), "type": type(e).__name__}
 
 
 @app.post("/register_device")
