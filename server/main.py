@@ -1,11 +1,15 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from datetime import datetime, timedelta
 import os
 
 # Local imports
 from . import models, database, auth
+
+# Create tables on startup
+models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Device Approval Auth System")
 
@@ -73,7 +77,7 @@ def health_check():
     try:
         # Test database connection
         db = next(database.get_db())
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e), "type": type(e).__name__}
