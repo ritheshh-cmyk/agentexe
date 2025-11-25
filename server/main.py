@@ -64,9 +64,27 @@ def approve_device(request: models.DeviceApproval, db: Session = Depends(databas
     db.commit()
     return {"message": f"Device {'approved' if request.approved else 'rejected'}"}
 
+@app.get("/")
+def root():
+    return {"message": "Device Approval System is Running", "docs": "/docs"}
+
+@app.get("/health")
+def health_check():
+    try:
+        # Test database connection
+        db = next(database.get_db())
+        db.execute("SELECT 1")
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e), "type": type(e).__name__}
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(db: Session = Depends(database.get_db)):
-    devices = db.query(models.Device).all()
+    try:
+        devices = db.query(models.Device).all()
+    except Exception as e:
+        return f"<h1>Error Connecting to Database</h1><p>{str(e)}</p>"
+
     
     rows = ""
     for d in devices:
